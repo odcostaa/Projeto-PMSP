@@ -1,0 +1,5 @@
+work/
+provas_zip/
+*.pdf
+node_modules/
+.DS_Store

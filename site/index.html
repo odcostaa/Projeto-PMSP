@@ -1,0 +1,851 @@
+<title>Questões PMSP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: barra de navegação, faixa azul-marinho com título, bloco de filtros em grade, barra de contagem e cartões de questão em coluna larga. */
+  :root {
+    --bg: #ffffff;
+    --page: #f5f6f8;
+    --nav: #ffffff;
+    --hero: #0d1b4c;
+    --hero-ink: #ffffff;
+    --hero-sub: #aab6dc;
+    --ink: #232a3a;
+    --muted: #6b7388;
+    --line: #e1e4ea;
+    --head: #eef0f3;
+    --field: #eceff3;
+    --blue: #1a5ce0;
+    --blue-soft: #e6eefc;
+    --blue-dis: #8bb0f5;
+    --ok: #178a52;
+    --ok-soft: #e0f4ea;
+    --bad: #c8321f;
+    --bad-soft: #fde8e5;
+    --warn-soft: #fff2cf;
+    --warn-ink: #6b4d00;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --fs: 15px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161b27; --page: #0f131c; --nav: #161b27; --hero: #0a1233; --hero-sub: #8e9bc7;
+      --ink: #e3e7f0; --muted: #98a2ba; --line: #2a3246; --head: #1d2433; --field: #1f2636;
+      --blue: #6c9bff; --blue-soft: #1c2a4a; --blue-dis: #3b5a99;
+      --ok: #5fd39a; --ok-soft: #133524; --bad: #ff8f86; --bad-soft: #3b1c19;
+      --warn-soft: #3b3010; --warn-ink: #f1cf74;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161b27; --page: #0f131c; --nav: #161b27; --hero: #0a1233; --hero-sub: #8e9bc7;
+    --ink: #e3e7f0; --muted: #98a2ba; --line: #2a3246; --head: #1d2433; --field: #1f2636;
+    --blue: #6c9bff; --blue-soft: #1c2a4a; --blue-dis: #3b5a99;
+    --ok: #5fd39a; --ok-soft: #133524; --bad: #ff8f86; --bad-soft: #3b1c19;
+    --warn-soft: #3b3010; --warn-ink: #f1cf74;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 var(--font); padding: 0; }
+  .gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .in { max-width: 1060px; margin: 0 auto; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  button { font-family: inherit; }
+
+  /* navegação */
+  .nav { background: var(--nav); border-bottom: 1px solid var(--line); }
+  .nav .in { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding-block: 0; }
+  .brand { font-weight: 700; font-size: 19px; letter-spacing: -.01em; color: var(--hero); padding: 14px 0; }
+  :root[data-theme="dark"] .brand { color: var(--ink); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand { color: var(--ink); } }
+  .brand small { color: var(--blue); font-weight: 600; }
+  .nav button.lk { background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); font-size: 14px; padding: 18px 2px 15px; cursor: pointer; }
+  .nav button.lk[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--blue); }
+
+  /* faixa */
+  .hero { background: var(--hero); color: var(--hero-ink); padding-block: 28px 30px; }
+  .crumb { font-size: 12px; color: var(--hero-sub); margin-bottom: 8px; }
+  .crumb b { color: var(--hero-ink); font-weight: 500; }
+  h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+
+  main { padding-block: 22px 40px; }
+
+  /* filtros */
+  .fgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .fgrid .w2 { grid-column: span 2; }
+  .fgrid .w1 { grid-column: span 1; }
+  @media (max-width: 800px) { .fgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 460px) { .fgrid { grid-template-columns: minmax(0, 1fr); } .fgrid .w2 { grid-column: span 1; } }
+  .fld, .sel { background: var(--field); color: var(--ink); border: 1px solid transparent; border-radius: 4px; font: 14px var(--font); height: 38px; padding: 0 12px; width: 100%; min-width: 0; }
+  .fld::placeholder { color: var(--muted); }
+  .sel { appearance: none; -webkit-appearance: none; padding-right: 30px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7388' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; }
+  .sel.on { border-color: var(--blue); }
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+  .chips .lbl { color: var(--ink); font-size: 14px; margin-right: 2px; }
+  .chip { background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 13px; font-size: 13px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--blue-soft); color: var(--blue); border-color: var(--blue-soft); font-weight: 600; }
+  .frow { display: flex; flex-wrap: wrap; gap: 28px; }
+  .factions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 18px; margin-top: 18px; }
+  .linkbtn { background: none; border: 0; color: var(--muted); font-size: 13px; cursor: pointer; padding: 0; }
+  .btn { background: var(--blue); color: #fff; border: 0; border-radius: 4px; font-weight: 700; font-size: 13px; padding: 10px 20px; cursor: pointer; }
+  .btn:disabled { background: var(--blue-dis); cursor: default; }
+  .btn.sec { background: var(--bg); color: var(--blue); border: 1px solid var(--blue); }
+
+  /* barra de contagem */
+  .bar { background: var(--bg); border: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 10px 14px; margin: 22px 0 16px; }
+  .bar .n { margin-right: auto; color: var(--ink); }
+  .bar .n b { font-weight: 600; }
+  .bar .ico { background: none; border: 1px solid var(--line); border-radius: 4px; width: 34px; height: 32px; color: var(--ink); font-weight: 700; cursor: pointer; }
+  .bar label { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .bar .sel { width: auto; min-width: 74px; height: 32px; background-color: var(--field); }
+
+  /* cartão da questão */
+  .q { background: var(--bg); border: 1px solid var(--line); margin-bottom: 18px; font-size: var(--fs); }
+  .qh { background: var(--head); padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  .qn { background: var(--bg); border: 1px solid var(--line); font-weight: 700; padding: 0 8px; min-width: 28px; text-align: center; line-height: 24px; }
+  .qh a, .lnk { color: var(--blue); text-decoration: none; }
+  .qh .cod { color: var(--blue); }
+  .qh .flag { margin-left: auto; width: 14px; height: 14px; border: 2px solid var(--blue); border-radius: 3px; background: transparent; padding: 0; cursor: pointer; }
+  .qh .flag[aria-pressed="true"] { background: var(--blue); }
+  .qs { padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 6px 36px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .qs div { min-width: 0; }
+  .qs b { font-weight: 700; }
+  .qb { padding: 18px 14px 6px; }
+  .base { margin: 0 0 14px; padding: 10px 14px; background: var(--page); border-left: 3px solid var(--line); white-space: pre-line; text-align: justify; overflow-wrap: anywhere; }
+  .enun { margin: 0 0 16px; text-align: justify; overflow-wrap: anywhere; white-space: pre-line; }
+  .aviso { margin: 0 0 14px; font-size: 12.5px; background: var(--warn-soft); color: var(--warn-ink); padding: 6px 10px; }
+  .ex { display: inline-block; font-size: 12px; background: var(--warn-soft); color: var(--warn-ink); padding: 1px 8px; border-radius: 999px; }
+
+  .alts { padding: 0 0 0 14px; }
+  .alt { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .cut { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .cut[aria-pressed="true"] { background: var(--head); color: var(--muted); }
+  .dash { color: var(--line); flex: none; }
+  .let { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 1px solid var(--blue); background: var(--bg); color: var(--blue); font-weight: 600; font-size: 14px; cursor: pointer; padding: 0; }
+  .let[aria-pressed="true"] { background: var(--blue); color: #fff; }
+  .alt.certa .let { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .alt.errada .let { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .alt .tx { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; cursor: pointer; }
+  .alt.cortada .tx { text-decoration: line-through; color: var(--muted); }
+  .alt.cortada { opacity: .45; }
+  .alt.cortada .cut { opacity: 1; }
+  .figw { display: flex; justify-content: center; margin: 14px 0; }
+  .fig { display: block; max-width: 100%; height: auto; background: transparent; border: 0; }
+  .figw .fig { min-width: min(100%, 420px); }
+  .fig.foto { border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+  .fig.altimg { margin: 2px 0; max-width: min(100%, 620px); }
+  :root[data-theme="dark"] .fig:not(.foto) { filter: invert(1) hue-rotate(180deg); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fig:not(.foto) { filter: invert(1) hue-rotate(180deg); } }
+  .rel { white-space: pre-wrap; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; background: var(--page); border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 8px 0; user-select: text; }
+  .seg { position: relative; background-repeat: no-repeat; background-color: #fff; max-width: 100%; }
+  .alt.cortada .seg::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #111; }
+  .cred { margin: -6px 0 14px; font-size: 12.5px; color: var(--muted); }
+  .ia { white-space: normal; line-height: 1.55; }
+  .ia h4 { margin: 12px 0 4px; font-size: 14px; }
+  .ia p { margin: 0 0 8px; white-space: normal; }
+  .ia ol, .ia ul { margin: 0 0 8px; padding-left: 22px; }
+  .chat { margin-top: 16px; border-top: 1px solid var(--line, #8883); padding-top: 12px; }
+  .chat-h { font-weight: 600; margin-bottom: 8px; }
+  .cm { padding: 8px 12px; border-radius: 10px; margin: 6px 0; max-width: 92%; line-height: 1.5; }
+  .cm.u { background: var(--field); margin-left: auto; white-space: pre-wrap; }
+  .cm.m { background: transparent; border: 1px solid var(--line, #8885); }
+  .cm p { margin: 0 0 6px; }
+  .chat-in { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .chat-in textarea { flex: 1; min-height: 44px; }
+  .ia-tag { font-size: 12px; color: var(--muted); }
+  .ja { display: inline-block; font-size: 12px; background: var(--blue-soft); color: var(--blue); padding: 1px 9px; border-radius: 999px; font-weight: 600; }
+  .anul { margin: 0 14px 14px; padding: 9px 12px; background: var(--warn-soft); color: var(--warn-ink); font-size: 14px; }
+  .alt:has(.let:disabled) .tx { cursor: default; }
+  .let:disabled { cursor: default; }
+
+  .qa { padding: 4px 14px 16px; }
+  .res { margin: 0 14px 14px; padding: 9px 12px; font-size: 14px; }
+  .res.ok { background: var(--ok-soft); color: var(--ok); }
+  .res.erro { background: var(--bad-soft); color: var(--bad); }
+  .qf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; border-top: 1px solid var(--line); padding: 12px 14px; margin: 0 6px; }
+  .act { background: none; border: 0; color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 6px; }
+  .act svg { color: var(--blue); }
+  .act[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+  .act.rep svg { color: var(--bad); }
+  .panel { border-top: 1px solid var(--line); padding: 14px; background: var(--page); font-size: 14px; }
+  .panel textarea { width: 100%; min-height: 84px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); font: 14px var(--font); padding: 8px 10px; margin-bottom: 8px; }
+  .panel p { margin: 0 0 6px; white-space: pre-line; }
+  .muted { color: var(--muted); }
+
+  .pag { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 20px 0 6px; }
+  .box { background: var(--bg); border: 1px solid var(--line); padding: 20px; margin-bottom: 16px; }
+  .big { font-size: 44px; font-weight: 700; line-height: 1; color: var(--blue); font-variant-numeric: tabular-nums; }
+  .linha { display: flex; justify-content: space-between; gap: 12px; }
+  .linha span:last-child { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .barra { height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 5px 0 14px; }
+  .barra i { display: block; height: 100%; background: var(--ok); }
+  .vazio { text-align: center; padding: 38px 16px; color: var(--muted); }
+  .vazio b { color: var(--ink); display: block; font-size: 17px; margin-bottom: 6px; }
+  code { background: var(--blue-soft); color: var(--blue); padding: 1px 6px; border-radius: 4px; font-size: 12.5px; overflow-wrap: anywhere; }
+  textarea.big-in { width: 100%; min-height: 180px; font: 12.5px ui-monospace, Menlo, Consolas, monospace; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 8px; }
+  .acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+</style>
+
+<div class="nav gut"><div class="in">
+  <div class="brand">Questões <small>PMSP</small></div>
+  <button class="lk" id="tab-q" aria-selected="true">Questões</button>
+  <button class="lk" id="tab-d" aria-selected="false">Desempenho</button>
+  <button class="lk" id="tab-i" aria-selected="false" hidden>Importar</button>
+</div></div>
+
+<div class="hero gut"><div class="in">
+  <div class="crumb">Início » <b>Questões</b></div>
+  <h1>Você pesquisou questões de concursos sobre PMSP</h1>
+</div></div>
+
+<main class="gut"><div class="in">
+  <div id="aviso"></div>
+
+  <section id="v-q">
+    <div class="fgrid">
+      <input class="fld w2" id="f-busca" type="search" placeholder="Pesquisar" aria-label="Pesquisar no enunciado">
+      <select class="sel w2" id="f-materia" aria-label="Disciplina"><option value="">Disciplina</option></select>
+      <select class="sel" id="f-banca" aria-label="Banca"><option value="">Banca</option></select>
+      <select class="sel" id="f-orgao" aria-label="Instituição"><option value="">Instituição</option></select>
+      <select class="sel" id="f-cargo" aria-label="Cargo"><option value="">Cargo</option></select>
+      <select class="sel" id="f-ano" aria-label="Ano"><option value="">Ano</option></select>
+    </div>
+    <div class="frow">
+      <div class="chips"><span class="lbl">Minhas questões:</span>
+        <button class="chip" data-st="resolvidas" aria-pressed="false">Resolvidas</button>
+        <button class="chip" data-st="nova" aria-pressed="false">Não resolvidas</button>
+        <button class="chip" data-st="certas" aria-pressed="false">Certas</button>
+        <button class="chip" data-st="erradas" aria-pressed="false">Erradas</button>
+      </div>
+      <div class="chips"><span class="lbl">Marcadas:</span>
+        <button class="chip" data-st="marcadas" aria-pressed="false">Com marcador</button>
+      </div>
+    </div>
+    <div class="factions">
+      <button class="linkbtn" id="limpar">Limpar filtro</button>
+      <button class="btn" id="filtrar">Filtrar questões</button>
+    </div>
+
+    <div class="bar">
+      <div class="n" id="count"></div>
+      <button class="ico" id="fmais" aria-label="Aumentar fonte">A+</button>
+      <button class="ico" id="fmenos" aria-label="Diminuir fonte">A−</button>
+      <button class="ico" id="tema" aria-label="Alternar tema escuro">☾</button>
+      <label>Questões por página
+        <select class="sel" id="pp"><option>10</option><option selected>20</option><option>50</option></select>
+      </label>
+      <select class="sel" id="ordem" aria-label="Ordem"><option value="rec">Mais recentes</option><option value="ant">Mais antigas</option></select>
+    </div>
+
+    <div id="lista"></div>
+    <div class="pag" id="pag" hidden>
+      <button class="btn sec" id="ant">← Anterior</button>
+      <span class="muted" id="pag-txt"></span>
+      <button class="btn sec" id="prox">Próxima →</button>
+    </div>
+  </section>
+
+  <section id="v-d" hidden><div id="stats"></div></section>
+
+  <section id="v-i" hidden>
+    <div class="box">
+      <b>Importar questões</b>
+      <p class="muted">Cole um CSV (separador <code>;</code> ou <code>,</code>) ou escolha um arquivo. Reimportar a mesma prova e número atualiza a questão, sem duplicar.</p>
+      <p class="muted">Colunas: <code>orgao;cargo;banca;ano;prova;materia;numero;texto;enunciado;A;B;C;D;E;gabarito;comentario</code> (<code>prova</code>, <code>texto</code> e <code>comentario</code> são opcionais).</p>
+      <input type="file" id="csv-file" accept=".csv,.txt" style="margin-bottom:8px">
+      <textarea class="big-in" id="csv-text" placeholder="orgao;cargo;banca;ano;prova;materia;numero;texto;enunciado;A;B;C;D;E;gabarito;comentario"></textarea>
+      <div class="acoes">
+        <button class="btn" id="imp-go">Importar</button>
+        <button class="btn sec" id="imp-del-ex">Remover questões de exemplo</button>
+      </div>
+      <p class="muted" id="imp-msg" role="status"></p>
+    </div>
+  </section>
+</div></main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { base: [], db: null, uid: null, admin: false, questoes: [], resp: new Map(), carregou: false, pagina: 1, aba: 'q',
+    ocupado: new Set(), sel: new Map(), cort: new Map(), painel: new Map(), status: '', fs: 15 };
+
+  var IC = {
+    cut: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg>',
+    com: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 20l1-5.2A8 8 0 1 1 21 12z"/></svg>',
+    mar: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+    not: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    est: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>',
+    rep: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01" stroke-linecap="round"/></svg>'
+  };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function slug(s) {
+    return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  }
+  function aviso(html) { $('aviso').innerHTML = html ? '<div class="box vazio">' + html + '</div>' : ''; }
+  function provaDe(q) { return q.prova || [q.orgao, q.cargo, q.banca, q.ano].filter(Boolean).join(' - '); }
+
+  /* ---------- abas ---------- */
+  function aba(a) {
+    S.aba = a;
+    ['q', 'd', 'i'].forEach(function (k) {
+      $('v-' + k).hidden = k !== a;
+      $('tab-' + k).setAttribute('aria-selected', String(k === a));
+    });
+    if (a === 'd') renderStats();
+  }
+  $('tab-q').onclick = function () { aba('q'); };
+  $('tab-d').onclick = function () { aba('d'); };
+  $('tab-i').onclick = function () { aba('i'); };
+
+  /* ---------- filtros ---------- */
+  var CAMPOS = [['f-materia', 'materia', 'Disciplina'], ['f-banca', 'banca', 'Banca'], ['f-orgao', 'orgao', 'Instituição'], ['f-cargo', 'cargo', 'Cargo'], ['f-ano', 'ano', 'Ano']];
+  function renderFiltros() {
+    CAMPOS.forEach(function (c) {
+      var sel = $(c[0]), atual = sel.value;
+      var vals = Array.from(new Set(S.questoes.map(function (q) { return q[c[1]]; }).filter(function (x) { return x != null && x !== ''; })));
+      vals.sort(c[1] === 'ano' ? function (a, b) { return b - a; } : function (a, b) { return String(a).localeCompare(String(b), 'pt'); });
+      sel.innerHTML = '<option value="">' + c[2] + '</option>' + vals.map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('');
+      sel.value = vals.map(String).indexOf(atual) >= 0 ? atual : '';
+      sel.classList.toggle('on', !!sel.value);
+    });
+  }
+  CAMPOS.forEach(function (c) { $(c[0]).onchange = function () { this.classList.toggle('on', !!this.value); S.pagina = 1; renderLista(); }; });
+  $('f-busca').oninput = function () { S.pagina = 1; renderLista(); };
+  $('pp').onchange = function () { S.pagina = 1; renderLista(); };
+  $('ordem').onchange = function () { S.pagina = 1; renderLista(); };
+  $('filtrar').onclick = function () { S.pagina = 1; renderLista(); };
+  $('limpar').onclick = function () {
+    CAMPOS.forEach(function (c) { $(c[0]).value = ''; $(c[0]).classList.remove('on'); });
+    $('f-busca').value = ''; S.status = ''; syncChips(); S.pagina = 1; renderLista();
+  };
+  document.querySelectorAll('.chip').forEach(function (b) {
+    b.onclick = function () { S.status = S.status === b.dataset.st ? '' : b.dataset.st; syncChips(); S.pagina = 1; renderLista(); };
+  });
+  function syncChips() {
+    document.querySelectorAll('.chip').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.st === S.status)); });
+  }
+  $('ant').onclick = function () { S.pagina--; renderLista(true); };
+  $('prox').onclick = function () { S.pagina++; renderLista(true); };
+  $('fmais').onclick = function () { S.fs = Math.min(S.fs + 1, 22); document.documentElement.style.setProperty('--fs', S.fs + 'px'); };
+  $('fmenos').onclick = function () { S.fs = Math.max(S.fs - 1, 12); document.documentElement.style.setProperty('--fs', S.fs + 'px'); };
+  $('tema').onclick = function () {
+    var r = document.documentElement;
+    var escuro = r.dataset.theme === 'dark' || (r.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    r.dataset.theme = escuro ? 'light' : 'dark';
+  };
+
+  function filtradas() {
+    var v = function (id) { return $(id).value; };
+    var t = $('f-busca').value.trim().toLowerCase();
+    var lista = S.questoes.filter(function (q) {
+      if (v('f-materia') && q.materia !== v('f-materia')) return false;
+      if (v('f-banca') && q.banca !== v('f-banca')) return false;
+      if (v('f-orgao') && q.orgao !== v('f-orgao')) return false;
+      if (v('f-cargo') && q.cargo !== v('f-cargo')) return false;
+      if (v('f-ano') && String(q.ano) !== v('f-ano')) return false;
+      if (t && (String(q.enunciado) + ' ' + String(q.texto || '')).toLowerCase().indexOf(t) < 0) return false;
+      var r = S.resp.get(q.id), st = S.status;
+      if (st === 'resolvidas' && !(r && r.ultima)) return false;
+      if (st === 'nova' && r && r.ultima) return false;
+      if (st === 'certas' && !(r && r.ultima && r.correta === true)) return false;
+      if (st === 'erradas' && !(r && r.ultima && r.correta === false)) return false;
+      if (st === 'marcadas' && !(r && r.marcada)) return false;
+      return true;
+    });
+    if (v('ordem') === 'ant') lista = lista.slice().sort(function (a, b) { return (a.ano || 0) - (b.ano || 0) || (a.numero || 0) - (b.numero || 0); });
+    return lista;
+  }
+
+  /* ---------- cartão ---------- */
+  function imgs(arr) { return (arr || []).map(function (u) { return '<div class="figw"><img class="fig' + (/-f\.png$/.test(u) ? ' foto' : '') + '" loading="lazy" src="' + esc(u) + '" alt="Figura da questão"></div>'; }).join(''); }
+  function seg(q, y0, y1) {
+    var m = q.imgq, sh = Math.max(y1 - y0, 4), pos = m.h > sh ? (y0 / (m.h - sh) * 100) : 0;
+    return '<div class="seg" role="img" aria-label="Trecho da questão" style="width:min(' + Math.round(m.w * 0.6) + 'px,100%);aspect-ratio:' + m.w + '/' + Math.round(sh) + ';background-image:url(' + esc(m.f) + ');background-size:100% auto;background-position:0 ' + pos.toFixed(3) + '%"></div>';
+  }
+  function altY(q, l) {
+    var a = q.imgq.alts, ls = ['A', 'B', 'C', 'D', 'E'], i = ls.indexOf(l);
+    return [a[l], i < 4 ? a[ls[i + 1]] : q.imgq.h];
+  }
+
+  function cartao(q, idx) {
+    var r = S.resp.get(q.id) || {};
+    var feita = !!r.ultima;
+    var sel = S.sel.get(q.id), cort = new Set(r.cortadas || []);
+    var alts = ['A', 'B', 'C', 'D', 'E'].filter(function (l) { return (q.imgq && q.imgq.altimg) || (q.alternativas && q.alternativas[l]); }).map(function (l) {
+      var cls = 'alt' + (cort.has(l) ? ' cortada' : '');
+      if (feita && !q.anulada) { if (l === q.gabarito) cls += ' certa'; else if (l === r.ultima) cls += ' errada'; }
+      return '<div class="' + cls + '">' +
+        '<button class="cut" data-cut="' + l + '" aria-pressed="' + cort.has(l) + '" aria-label="Riscar alternativa ' + l + '">' + IC.cut + '</button>' +
+        '<span class="dash">–</span>' +
+        '<button class="let" data-let="' + l + '" aria-pressed="' + (sel === l) + '"' + (feita || q.anulada ? ' disabled' : '') + '>' + l + '</button>' +
+        '<div class="tx" data-let="' + l + '">' + ((q.imgq && q.imgq.altimg) ? (q.imgq.altf && q.imgq.altf[l] ? '<img class="fig altimg' + (/-f\.png$/.test(q.imgq.altf[l]) ? ' foto' : '') + '" loading="lazy" src="' + esc(q.imgq.altf[l]) + '" alt="Alternativa ' + l + '">' : seg(q, altY(q, l)[0], altY(q, l)[1])) : esc(q.alternativas[l])) + '</div></div>';
+    }).join('');
+    var painel = S.painel.get(q.id), corpo = '';
+    if (painel === 'com') {
+      corpo = (feita || q.anulada) ? '<p><b>Gabarito: ' + esc(q.gabarito || 'anulada') + '</b></p>' + (q.comentario ? '<p>' + esc(q.comentario) + '</p>' : '') + iaHtml(q, r)
+        : '<p class="muted">Responda a questão para ver o gabarito e a explicação passo a passo.</p>';
+    } else if (painel === 'est') {
+      var t = r.tentativas || 0, a = r.acertos || 0;
+      corpo = t ? '<p>Você respondeu esta questão <b>' + t + '</b> vez(es) e acertou <b>' + a + '</b> (' + Math.round(a / t * 100) + '%).</p>' : '<p class="muted">Você ainda não respondeu esta questão.</p>';
+    } else if (painel === 'not') {
+      corpo = '<textarea id="nota-' + esc(q.id) + '" placeholder="Escreva sua anotação">' + esc(r.nota || '') + '</textarea><button class="btn" data-salvar="nota">Salvar anotação</button>';
+    } else if (painel === 'rep') {
+      corpo = '<textarea id="rep-' + esc(q.id) + '" placeholder="Descreva o erro (enunciado, alternativa ou gabarito)"></textarea><button class="btn" data-salvar="rep">Enviar</button> <span class="muted" id="repm-' + esc(q.id) + '"></span>';
+    }
+    var A = function (k, ic, nome) { return '<button class="act' + (k === 'rep' ? ' rep' : '') + '" data-act="' + k + '" aria-pressed="' + (painel === k || (k === 'mar' && !!r.marcada)) + '">' + ic + nome + '</button>'; };
+    return '<article class="q" data-q="' + esc(q.id) + '">' +
+      '<div class="qh"><span class="qn">' + (q.numero || idx) + '</span><span class="cod">' + esc(q.codigo || q.id) + '</span>' +
+      '<span>' + esc(q.materia) + '</span>' + (q.exemplo ? '<span class="ex">Exemplo (fictícia)</span>' : '') + (q.anulada ? '<span class="ex">Anulada</span>' : '') + ((r.tentativas || 0) > 0 ? '<span class="ja">Já respondida</span>' : '') +
+      '<button class="flag" data-act="mar" aria-pressed="' + !!r.marcada + '" aria-label="Marcar questão"></button></div>' +
+      '<div class="qs"><div><b>Ano:</b> <span class="lnk">' + esc(q.ano) + '</span></div><div><b>Banca:</b> <span class="lnk">' + esc(q.banca) + '</span></div><div><b>Prova:</b> <span class="lnk">' + esc(provaDe(q)) + '</span></div></div>' +
+      '<div class="qb">' + imgs(q.figuras) + (q.texto ? '<p class="base">' + esc(q.texto) + '</p>' : '') + (q.credito ? '<p class="cred">' + esc(q.credito) + '</p>' : '') +
+      (q.aviso ? '<p class="aviso">' + esc(q.aviso) + '</p>' : '') +
+      (q.blocos ? q.blocos.map(function (b) { return b.t != null ? '<p class="enun">' + esc(b.t) + '</p>' : imgs([b.i]); }).join('') : (q.imgq && q.imgq.stem) ? seg(q, 0, q.imgq.alts.A) + '<div style="height:14px"></div>' : '<p class="enun">' + esc(q.enunciado) + '</p>' + imgs(q.figuras_q)) + '</div>' +
+      '<div class="alts">' + alts + '</div>' +
+      '<div class="qa">' + (q.anulada ? '' : feita ? '<button class="btn sec" data-refazer="1">Refazer</button>' : '<button class="btn" data-resp="1"' + (sel ? '' : ' disabled') + '>Responder</button>') + '</div>' +
+      (q.anulada ? '<div class="anul"><b>Questão anulada pela banca.</b> Não conta no seu desempenho.</div>' : feita ? '<div class="res ' + (r.correta ? 'ok' : 'erro') + '"><b>' + (r.correta ? 'Você acertou!' : 'Você errou. Gabarito: ' + esc(q.gabarito)) + '</b></div>' : '') +
+      '<div class="qf">' + A('com', IC.com, 'Comentários') + A('mar', IC.mar, 'Marcadores') + A('not', IC.not, 'Anotações') + A('est', IC.est, 'Estatísticas') + A('rep', IC.rep, 'Reportar Erro') + '</div>' +
+      (corpo ? '<div class="panel">' + corpo + '</div>' : '') + '</article>';
+  }
+
+  function renderLista(rolar) {
+    if (!S.carregou) { $('lista').innerHTML = '<div class="box vazio">Carregando questões…</div>'; return; }
+    if (!S.questoes.length) {
+      $('count').innerHTML = ''; $('pag').hidden = true;
+      $('lista').innerHTML = '<div class="box vazio"><b>Nenhuma questão cadastrada ainda</b>' +
+        (S.admin ? 'Use a aba Importar para colar um CSV, ou envie as provas para o Claude na conversa.' : 'As questões aparecerão aqui assim que forem adicionadas.') + '</div>';
+      return;
+    }
+    var lista = filtradas(), pp = Number($('pp').value) || 20;
+    var total = Math.max(Math.ceil(lista.length / pp), 1);
+    S.pagina = Math.min(Math.max(S.pagina, 1), total);
+    var ini = (S.pagina - 1) * pp;
+    $('count').innerHTML = '<b>' + lista.length + '</b> questões encontradas';
+    $('lista').innerHTML = lista.length ? lista.slice(ini, ini + pp).map(function (q, i) { return cartao(q, ini + i + 1); }).join('') : '<div class="box vazio">Nenhuma questão com esses filtros.</div>';
+    $('pag').hidden = total <= 1;
+    $('pag-txt').textContent = 'Página ' + S.pagina + ' de ' + total;
+    $('ant').disabled = S.pagina <= 1; $('prox').disabled = S.pagina >= total;
+    if (rolar) window.scrollTo({ top: 0 });
+  }
+
+  /* ---------- interações do cartão ---------- */
+  $('lista').addEventListener('click', function (e) {
+    var card = e.target.closest('.q'); if (!card) return;
+    var id = card.dataset.q;
+    var el;
+    if ((el = e.target.closest('[data-let]'))) {
+      var r0 = S.resp.get(id); if (r0 && r0.ultima) return;
+      S.sel.set(id, S.sel.get(id) === el.dataset.let ? null : el.dataset.let); return renderLista();
+    }
+    if ((el = e.target.closest('[data-cut]'))) {
+      var l = el.dataset.cut, cs = ((S.resp.get(id) || {}).cortadas || []).slice();
+      var i = cs.indexOf(l); if (i >= 0) cs.splice(i, 1); else cs.push(l);
+      if (cs.indexOf(l) >= 0 && S.sel.get(id) === l) S.sel.set(id, null);
+      return gravar(id, { cortadas: cs.sort() });
+    }
+    if (e.target.closest('[data-ia]')) return gerarIA(id, true);
+    if (e.target.closest('[data-chat]')) return enviarChat(id);
+    if (e.target.closest('[data-setkey]')) { var nk = prompt('Cole sua chave do Gemini (AIza…). Fica salva só neste navegador:', G.key || ''); if (nk !== null) { G.key = nk.trim(); try { localStorage.setItem('pmsp-gemini-key', G.key); } catch (x) {} G.bloq = false; location.reload(); } return; }
+    if (e.target.closest('[data-diag]')) return diagnostico();
+    if (e.target.closest('[data-resp]')) return responder(id);
+    if (e.target.closest('[data-refazer]')) return refazer(id);
+    if ((el = e.target.closest('[data-act]'))) {
+      var k = el.dataset.act;
+      if (k === 'mar') return gravar(id, { marcada: !((S.resp.get(id) || {}).marcada) });
+      S.painel.set(id, S.painel.get(id) === k ? null : k); renderLista();
+      var rr = S.resp.get(id) || {};
+      if (k === 'com' && S.painel.get(id) === 'com' && G.key && !G.bloq && !rr.ia && (rr.ultima || (S.questoes.find(function (x) { return x.id === id; }) || {}).anulada) && !G.estado.get(id)) gerarIA(id);
+      return;
+    }
+    if ((el = e.target.closest('[data-salvar]'))) {
+      if (el.dataset.salvar === 'nota') return gravar(id, { nota: document.getElementById('nota-' + id).value.slice(0, 5000) });
+      return reportar(id);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && e.target && /^chat-/.test(e.target.id || '')) { e.preventDefault(); enviarChat(e.target.id.slice(5)); }
+  });
+
+  /* ---------- explicação por IA (Gemini) ---------- */
+  var G = { key: (function(){try{return localStorage.getItem('pmsp-gemini-key')||''}catch(e){return ''}})(), model: null, carregou: true, estado: new Map(), chat: new Map(), env: new Map(), csp: [], diag: '', diagBusy: false, bloq: false };
+  document.addEventListener('securitypolicyviolation', function (e) { if (G.csp.length < 12) G.csp.push((e.violatedDirective || '') + ' → ' + (e.blockedURI || '')); });
+  function mdHtml(t) {
+    var out = [], lst = null;
+    function fecha() { if (lst) { out.push('</' + lst + '>'); lst = null; } }
+    function inl(x) { return esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, '$1<i>$2</i>').replace(/`([^`]+)`/g, '<code>$1</code>'); }
+    String(t || '').split('\n').forEach(function (ln) {
+      var m;
+      if ((m = ln.match(/^\s*#{1,4}\s+(.*)$/))) { fecha(); out.push('<h4>' + inl(m[1]) + '</h4>'); }
+      else if ((m = ln.match(/^\s*\d+[.)]\s+(.*)$/))) { if (lst !== 'ol') { fecha(); out.push('<ol>'); lst = 'ol'; } out.push('<li>' + inl(m[1]) + '</li>'); }
+      else if ((m = ln.match(/^\s*[-*•]\s+(.*)$/))) { if (lst !== 'ul') { fecha(); out.push('<ul>'); lst = 'ul'; } out.push('<li>' + inl(m[1]) + '</li>'); }
+      else if (!ln.trim()) { fecha(); }
+      else { fecha(); out.push('<p>' + inl(ln) + '</p>'); }
+    });
+    fecha(); return out.join('');
+  }
+  function chatDe(qid, r) { if (!G.chat.has(qid)) { var c = []; try { c = JSON.parse(r.chat || '[]'); } catch (e) {} G.chat.set(qid, c); } return G.chat.get(qid); }
+  function iaHtml(q, r) {
+    var st = G.estado.get(q.id);
+    var btn = function (t) { return '<button class="btn sec" data-ia="1">' + t + '</button>'; };
+    var h = '';
+    if (st === 'carregando') h += '<p class="muted" role="status">O Gemini está preparando a explicação…</p>';
+    else {
+      if (st && st.erro) h += '<p style="color:var(--bad)">' + esc(st.erro) + '</p>';
+      if (r.ia) h += '<div class="ia">' + mdHtml(r.ia) + '</div><p class="ia-tag">Explicação gerada por IA' + (r.iaModelo === 'claude' ? ' (Claude, porque o Gemini está bloqueado neste ambiente)' : ' (Gemini)') + '; confira sempre com o gabarito oficial.</p>' + btn('Gerar de novo');
+      else h += btn(G.bloq ? 'Explicar com o Claude (consome seu limite de uso)' : 'Explicar com IA (passo a passo)');
+    }
+    var ch = chatDe(q.id, r), pend = G.env.get(q.id);
+    h += '<p class="muted" style="margin:10px 0 0"><button class="btn sec" data-diag="1"' + (G.diagBusy ? ' disabled' : '') + '>Diagnosticar conexão com o Gemini</button> <button class="btn sec" data-setkey="1">' + (G.key ? 'Trocar' : 'Definir') + ' chave do Gemini</button></p>' + (G.diag ? '<pre class="rel">' + esc(G.diag) + '</pre>' : '') + '<div class="chat"><div class="chat-h">Converse com o Gemini sobre esta questão</div>' +
+      ch.map(function (m) { return '<div class="cm ' + (m.r === 'u' ? 'u' : 'm') + '">' + (m.r === 'u' ? esc(m.t) : mdHtml(m.t)) + '</div>'; }).join('') +
+      (pend ? '<div class="cm m muted" role="status">Gemini está digitando…</div>' : '') +
+      '<div class="chat-in"><textarea id="chat-' + esc(q.id) + '" rows="2" placeholder="Pergunte algo: não entendi o passo 2, explique de outro jeito, dê outro exemplo…"></textarea><button class="btn" data-chat="1"' + (pend ? ' disabled' : '') + '>Enviar</button></div></div>';
+    return h;
+  }
+  async function carregarChave() { return; }
+  async function escolherModelo() {
+    if (G.model) return G.model;
+    var pref = 'gemini-2.5-flash';
+    try {
+      var rs = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': G.key } });
+      if (rs.ok) {
+        var js = await rs.json(), melhor = null, nv = -1;
+        (js.models || []).forEach(function (m) {
+          var n = (m.name || '').replace('models/', ''), mm = n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/);
+          if (mm && (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && parseFloat(mm[1]) > nv) { nv = parseFloat(mm[1]); melhor = n; }
+        });
+        if (melhor) pref = melhor;
+      }
+    } catch (e) {}
+    G.model = pref; return pref;
+  }
+  async function imgB64(url) {
+    var rs = await fetch(url); if (!rs.ok) throw new Error('img');
+    var bl = await rs.blob();
+    return await new Promise(function (ok, no) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = no; fr.readAsDataURL(bl); });
+  }
+  function ctxBase(q) {
+    var ls = ['A', 'B', 'C', 'D', 'E'];
+    var alts = ls.map(function (l) { return q.alternativas && q.alternativas[l] ? '(' + l + ') ' + q.alternativas[l] : ''; }).filter(Boolean).join('\n');
+    var txt = 'Você é um professor experiente de concursos da Polícia Militar do Estado de São Paulo (Soldado PM, banca VUNESP). Explique em português do Brasil, de forma clara para um estudante, a questão abaixo.\n\n' +
+      'GABARITO OFICIAL: ' + (q.gabarito || 'questão anulada') + '. Use esse gabarito como verdade.\n\n' +
+      'Disciplina: ' + q.materia + ' | Prova: ' + q.prova + ' | Questão ' + q.numero + '\n\n' +
+      (q.texto ? 'TEXTO DE APOIO:\n' + q.texto + '\n' + (q.credito || '') + '\n\n' : '') +
+      'ENUNCIADO:\n' + q.enunciado + '\n\nALTERNATIVAS:\n' + (alts || '(as alternativas são imagens anexas, na ordem A, B, C, D, E)') + '\n\n' +
+      'Se houver imagens anexas (tabela, gráfico, tira, figura, alternativas em imagem), elas fazem parte da prova: use-as.\n\n' +
+      'Responda em Markdown com estas seções, nesta ordem:\n' +
+      '## Resposta correta\n(letra e a ideia central em 1 frase)\n' +
+      '## Por que esta é a resposta\n(explicação objetiva do raciocínio; cite trechos do texto ou a regra gramatical/legal/conceito aplicado)\n' +
+      '## Passo a passo da resolução\n(lista numerada; em Matemática, Informática ou Raciocínio, mostre cada cálculo/etapa até o resultado)\n' +
+      '## Por que as outras estão erradas\n(uma linha para cada alternativa incorreta, no formato "(X) motivo")\n' +
+      '## Dica para a prova\n(1 a 2 frases)\n' +
+      'Se o gabarito oficial parecer inconsistente com o enunciado, diga isso numa seção "## Observação", mas explique o gabarito oficial. Não invente informações. Depois da explicação o aluno poderá fazer perguntas de acompanhamento: responda sempre de forma didática e direta.';
+    var urls = [];
+    (q.figuras || []).forEach(function (u) { urls.push(u); });
+    (q.figuras_q || []).forEach(function (u) { if (urls.indexOf(u) < 0) urls.push(u); });
+    if (q.imgq && q.imgq.altf) ['A', 'B', 'C', 'D', 'E'].forEach(function (l) { if (q.imgq.altf[l]) urls.push(q.imgq.altf[l]); });
+    return { txt: txt, urls: urls.slice(0, 8) };
+  }
+  async function ctxPartes(q) {
+    var c = ctxBase(q), parts = [{ text: c.txt }];
+    for (var i = 0; i < c.urls.length; i++) { try { parts.push({ inline_data: { mime_type: 'image/png', data: await imgB64(c.urls[i]) } }); } catch (e) {} }
+    return parts;
+  }
+  var GL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+  async function chamarGemini(contents) {
+    var modelo = await escolherModelo(), body = JSON.stringify({ contents: contents, generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } });
+    var rotas = [
+      { u: GL + modelo + ':generateContent', h: { 'Content-Type': 'application/json', 'x-goog-api-key': G.key } },
+      { u: GL + modelo + ':generateContent?key=' + encodeURIComponent(G.key), h: { 'Content-Type': 'text/plain' } },
+      { u: 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + modelo + ':generateContent?key=' + encodeURIComponent(G.key), h: { 'Content-Type': 'application/json' } }
+    ], ultimo = null, rede = 0;
+    for (var i = 0; i < rotas.length; i++) {
+      try {
+        var rs = await fetch(rotas[i].u, { method: 'POST', headers: rotas[i].h, body: body }), js = null;
+        try { js = await rs.json(); } catch (e) {}
+        if (rs.ok) {
+          var t = ((((js && js.candidates || [])[0] || {}).content || {}).parts || []).map(function (p) { return p.text || ''; }).join('').trim();
+          if (!t) throw new Error('A IA não devolveu texto (' + ((((js && js.candidates) || [])[0] || {}).finishReason || 'sem resposta') + ').');
+          return { t: t, modelo: modelo };
+        }
+        ultimo = new Error((js && js.error && js.error.message) || ('HTTP ' + rs.status));
+      } catch (e) { if (e instanceof TypeError) { rede++; ultimo = e; } else ultimo = e; }
+    }
+    if (rede === rotas.length) { var e2 = new Error('Failed to fetch'); e2.rede = true; throw e2; }
+    throw ultimo;
+  }
+  async function viaClaude(q, r, ch, pergunta) {
+    var sm = window.claude && await window.claude.use('sample');
+    if (!sm) throw new Error('indisponível');
+    var c = ctxBase(q), txt = c.txt;
+    if (pergunta) {
+      txt += '\n\n' + (r.ia ? 'EXPLICAÇÃO JÁ DADA AO ALUNO:\n' + r.ia + '\n\n' : '') + 'CONVERSA ATÉ AGORA:\n' + ch.slice(-12).map(function (m) { return (m.r === 'u' ? 'ALUNO: ' : 'PROFESSOR: ') + m.t; }).join('\n') + '\n\nResponda apenas à última pergunta do aluno, sem repetir a estrutura de seções.';
+    }
+    var op = { cache: false, modelTier: 'quick' }, lim = {};
+    try { lim = await sm.limits(); } catch (e) {}
+    if (lim && lim.images && c.urls.length) {
+      var bl = []; for (var i = 0; i < Math.min(c.urls.length, 4); i++) { try { bl.push(await (await fetch(c.urls[i])).blob()); } catch (e) {} }
+      if (bl.length) op.images = bl;
+    }
+    var res = await sm(txt, op);
+    return { t: String(res.text || '').trim() || 'Sem resposta.', modelo: 'claude' };
+  }
+  function erroIA(err) {
+    var m = String(err && err.message || err);
+    return (err && err.rede) || /Failed to fetch|NetworkError/i.test(m) ? 'O Gemini não pode ser acessado a partir desta página: o ambiente que hospeda o app bloqueia conexões com o Google (política CSP connect-src; não é erro da chave nem do código). Para ter a explicação agora, use o botão abaixo: ele usa o Claude e consome seu limite de uso do Claude.' : 'Erro do Gemini: ' + m;
+  }
+  async function pedirIA(q, r, ch, pergunta, manual) {
+    if (G.bloq) { if (manual) return await viaClaude(q, r, ch, pergunta); var eb = new Error('bloqueado'); eb.rede = true; throw eb; }
+    try {
+      var parts = await ctxPartes(q), cont = [{ role: 'user', parts: parts }];
+      if (pergunta) {
+        cont.push({ role: 'model', parts: [{ text: r.ia || 'Entendido. Pode perguntar sobre esta questão.' }] });
+        ch.slice(-12).forEach(function (m) { cont.push({ role: m.r === 'u' ? 'user' : 'model', parts: [{ text: m.t }] }); });
+      }
+      return await chamarGemini(cont);
+    } catch (err) {
+      if (err && err.rede) { G.bloq = true; if (manual) { try { return await viaClaude(q, r, ch, pergunta); } catch (e2) {} } }
+      throw err;
+    }
+  }
+  async function gerarIA(qid, manual) {
+    var q = S.questoes.find(function (x) { return x.id === qid; }); if (!q || !G.key) return;
+    G.estado.set(qid, 'carregando'); renderLista();
+    try {
+      var r = await pedirIA(q, S.resp.get(qid) || {}, [], false, manual);
+      G.estado.delete(qid);
+      await gravar(qid, { ia: r.t, iaEm: new Date().toISOString(), iaModelo: r.modelo });
+    } catch (err) { G.estado.set(qid, { erro: erroIA(err) }); renderLista(); }
+  }
+  async function enviarChat(qid) {
+    var q = S.questoes.find(function (x) { return x.id === qid; }), el = document.getElementById('chat-' + qid);
+    if (!q || !el || !el.value.trim() || G.env.get(qid)) return;
+    var msg = el.value.trim().slice(0, 2000), r = S.resp.get(qid) || {}, ch = chatDe(qid, r).slice();
+    ch.push({ r: 'u', t: msg }); G.chat.set(qid, ch); G.env.set(qid, 1); renderLista();
+    try {
+      var res = await pedirIA(q, r, ch, true, true);
+      ch.push({ r: 'm', t: res.t }); G.chat.set(qid, ch); G.env.delete(qid);
+      await gravar(qid, { chat: JSON.stringify(ch.slice(-30)) });
+    } catch (err) {
+      ch.push({ r: 'm', t: erroIA(err) }); G.chat.set(qid, ch); G.env.delete(qid); renderLista();
+    }
+  }
+  async function diagnostico() {
+    if (G.diagBusy) return; G.diagBusy = true; G.diag = 'Executando testes…'; renderLista();
+    var L = [], mk = function (s) { L.push(s); };
+    mk('RELATÓRIO DE DIAGNÓSTICO — conexão com o Gemini');
+    mk('Data: ' + new Date().toISOString());
+    mk('Origem da página: ' + location.origin + ' | contexto seguro: ' + isSecureContext + ' | online: ' + navigator.onLine);
+    mk('Navegador: ' + navigator.userAgent);
+    mk('Chave embutida: ' + (G.key ? G.key.slice(0, 3) + '… (' + G.key.length + ' caracteres; chaves do AI Studio costumam começar com "AIza")' : 'ausente'));
+    var res = {};
+    var t = async function (nome, fn) {
+      var t0 = Date.now();
+      try { var x = await fn(); res[nome] = x.ok ? 'ok' : 'http'; mk('• ' + nome + ': ' + x.txt + ' (' + (Date.now() - t0) + ' ms)'); }
+      catch (e) { res[nome] = 'exc'; mk('• ' + nome + ': EXCEÇÃO ' + (e && e.name) + ' – ' + (e && e.message) + ' (' + (Date.now() - t0) + ' ms)'); }
+    };
+    var http = async function (u, o) { var rs = await fetch(u, o), tx = ''; try { tx = (await rs.text()).slice(0, 160).replace(/\s+/g, ' '); } catch (e) {} return { ok: rs.ok, txt: 'HTTP ' + rs.status + (rs.ok ? '' : ' ' + tx) }; };
+    await t('controle: arquivo da própria página', function () { return http('questoes.json', { method: 'HEAD' }); });
+    await t('controle: fonts.googleapis.com (sem CORS)', async function () { await fetch('https://fonts.googleapis.com/css2?family=Inter', { mode: 'no-cors' }); return { ok: true, txt: 'respondeu' }; });
+    await t('controle: cdnjs.cloudflare.com (sem CORS)', async function () { await fetch('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js', { mode: 'no-cors' }); return { ok: true, txt: 'respondeu' }; });
+    await t('Gemini: generativelanguage, chave no cabeçalho', function () { return http('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', { headers: { 'x-goog-api-key': G.key } }); });
+    await t('Gemini: generativelanguage, chave na URL', function () { return http('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1&key=' + encodeURIComponent(G.key)); });
+    await t('Gemini: Vertex (aiplatform), chave na URL', function () { return http('https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(G.key), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Responda apenas: ok' }] }] }) }); });
+    var sm = null; try { sm = window.claude && await window.claude.use('sample'); } catch (e) {}
+    mk('Violações de CSP registradas: ' + (G.csp.length ? G.csp.join(' ; ') : 'nenhuma'));
+    mk('Recurso alternativo (Claude na página): ' + (sm ? 'disponível' : 'não disponível'));
+    var gk = Object.keys(res).filter(function (k) { return /^Gemini/.test(k); }), exc = gk.filter(function (k) { return res[k] === 'exc'; }).length, okk = gk.filter(function (k) { return res[k] === 'ok'; }).length;
+    mk('');
+    if (okk) mk('CONCLUSÃO: o Gemini respondeu. A conexão e a chave funcionam; se algo falhar, é pontual (cota ou modelo).');
+    else if (exc === gk.length && G.csp.some(function (x) { return /connect-src/.test(x); })) mk('CONCLUSÃO: NÃO é erro do app nem da chave. A política de segurança (CSP connect-src) do ambiente onde a página roda bloqueia chamadas a domínios externos como o Google. Nenhuma alteração no código resolve; o app usa o Claude da página como alternativa automática.');
+    else if (exc === gk.length) mk('CONCLUSÃO: as três rotas do Gemini falharam antes de qualquer resposta (erro de rede), enquanto o resultado dos testes de controle está acima. Se os controles externos também falharam, o ambiente bloqueia a saída; se só o Google falhou, é rede/extensão/firewall do navegador. Não é problema de lógica do app.');
+    else mk('CONCLUSÃO: o Google respondeu, mas recusou a requisição (veja o HTTP acima): provavelmente a chave não é aceita nesse endpoint, está restrita ou sem cota. Gere uma chave nova em aistudio.google.com/apikey (formato AIza…).');
+    G.diag = L.join('\n'); G.diagBusy = false; renderLista();
+  }
+  function refDoc(qid) { return S.db.doc('data/users/' + S.uid + '/' + qid); }
+  async function gravar(qid, campos) {
+    if (!S.db || !S.uid || S.ocupado.has(qid)) return;
+    S.ocupado.add(qid);
+    try { var novo = Object.assign({}, S.resp.get(qid) || {}, campos); S.resp.set(qid, novo); renderLista(); await refDoc(qid).set(novo); }
+    catch (err) { aviso('Não foi possível salvar (' + esc(err && err.code || 'erro') + '). Tente de novo.'); }
+    finally { S.ocupado.delete(qid); }
+  }
+  function responder(qid) {
+    var q = S.questoes.find(function (x) { return x.id === qid; }), letra = S.sel.get(qid);
+    if (!q || !letra || q.anulada || !/^[A-E]$/.test(q.gabarito || '')) return;
+    var prev = S.resp.get(qid) || {}, correta = q.gabarito === letra;
+    if (prev.ultima) return;
+    S.sel.set(qid, null);
+    return gravar(qid, { ultima: letra, correta: correta, tentativas: (prev.tentativas || 0) + 1, acertos: (prev.acertos || 0) + (correta ? 1 : 0), em: new Date().toISOString() });
+  }
+  function refazer(qid) { S.painel.set(qid, null); return gravar(qid, { ultima: null, correta: null }); }
+  async function reportar(qid) {
+    var tx = document.getElementById('rep-' + qid), m = document.getElementById('repm-' + qid);
+    if (!tx || !tx.value.trim() || !S.db || !S.uid) return;
+    try {
+      await S.db.doc('reportes/' + S.uid + '/itens/' + qid).set({ questao: qid, uid: S.uid, texto: tx.value.trim().slice(0, 2000), em: new Date().toISOString() });
+      tx.value = ''; if (m) m.textContent = 'Obrigado! Relato enviado.';
+    } catch (err) { if (m) m.textContent = 'Não foi possível enviar.'; }
+  }
+
+  /* ---------- desempenho ---------- */
+  function pct(a, t) { return t ? Math.round(a / t * 100) : 0; }
+  function renderStats() {
+    var tent = 0, ac = 0, feitas = 0, porM = {};
+    var porId = new Map(S.questoes.map(function (q) { return [q.id, q]; }));
+    S.resp.forEach(function (r, id) {
+      var q = porId.get(id); if (!q || q.anulada) return;
+      tent += r.tentativas || 0; ac += r.acertos || 0;
+      if (r.ultima) feitas++;
+      var m = porM[q.materia] || (porM[q.materia] = { t: 0, a: 0 });
+      m.t += r.tentativas || 0; m.a += r.acertos || 0;
+    });
+    var mats = Object.keys(porM).sort(function (a, b) { return a.localeCompare(b, 'pt'); });
+    $('stats').innerHTML =
+      '<div class="box"><div class="muted">Aproveitamento geral</div><div class="big">' + pct(ac, tent) + '%</div>' +
+      '<div class="muted">' + ac + ' acertos em ' + tent + ' respostas · ' + feitas + ' de ' + S.questoes.length + ' questões resolvidas</div></div>' +
+      '<div class="box"><b>Por disciplina</b><div style="height:12px"></div>' +
+      (mats.length ? mats.map(function (n) {
+        var m = porM[n];
+        return '<div class="linha"><span>' + esc(n) + '</span><span>' + pct(m.a, m.t) + '% (' + m.a + '/' + m.t + ')</span></div><div class="barra"><i style="width:' + pct(m.a, m.t) + '%"></i></div>';
+      }).join('') : '<span class="muted">Resolva algumas questões para ver seu desempenho por disciplina.</span>') + '</div>' +
+      '<div class="box"><b>Esquecer questões respondidas</b><p class="muted" style="margin:6px 0 12px">Limpa respostas, acertos e “Já respondida” (e as alternativas riscadas) para você poder resolver de novo. Anotações, marcadores e explicações da IA são mantidos.</p>' +
+      '<select id="rs-mat" aria-label="Disciplina"><option value="">Todas as disciplinas</option>' + Array.from(new Set(S.questoes.map(function (q) { return q.materia; }))).sort(function (a, b) { return a.localeCompare(b, 'pt'); }).map(function (m) { return '<option' + (m === S.rsMat ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select> ' +
+      (S.rsConf ? '<button class="btn" data-rs="go">Confirmar: esquecer agora</button> <button class="btn sec" data-rs="no">Cancelar</button>' : '<button class="btn sec" data-rs="ask">Esquecer respondidas…</button>') + '<span id="rs-msg" class="muted" style="margin-left:10px">' + esc(S.rsMsg || '') + '</span></div>';
+  }
+
+  $('stats').addEventListener('click', async function (e) {
+    var b = e.target.closest('[data-rs]'); if (!b) return;
+    var a = b.dataset.rs, sel = $('rs-mat'); if (sel) S.rsMat = sel.value;
+    if (a === 'ask') { S.rsConf = true; S.rsMsg = ''; return renderStats(); }
+    if (a === 'no') { S.rsConf = false; return renderStats(); }
+    if (a !== 'go' || !S.db || !S.uid) return;
+    var mat = S.rsMat || '', ids = S.questoes.filter(function (q) { return !mat || q.materia === mat; }).map(function (q) { return q.id; }).filter(function (id) { var r = S.resp.get(id); return r && (r.tentativas || r.ultima || (r.cortadas && r.cortadas.length)); });
+    S.rsConf = false; S.rsMsg = 'Limpando ' + ids.length + ' questão(ões)…'; renderStats();
+    var falhas = 0;
+    for (var i = 0; i < ids.length; i += 8) {
+      await Promise.all(ids.slice(i, i + 8).map(async function (id) {
+        var novo = Object.assign({}, S.resp.get(id), { ultima: null, correta: null, tentativas: 0, acertos: 0, em: null, cortadas: [] });
+        try { await refDoc(id).set(novo); S.resp.set(id, novo); S.sel.set(id, null); S.painel.set(id, null); } catch (err) { falhas++; }
+      }));
+    }
+    S.rsMsg = falhas ? 'Concluído com ' + falhas + ' falha(s). Tente de novo.' : ids.length + ' questão(ões) liberada(s) para resolver de novo.';
+    renderLista(); renderStats();
+  });
+
+  /* ---------- importação (editores) ---------- */
+  function parseCSV(txt) {
+    txt = txt.replace(/^﻿/, '');
+    var sep = (txt.split('\n')[0] || '').indexOf(';') >= 0 ? ';' : ',';
+    var rows = [], row = [], cell = '', q = false;
+    for (var i = 0; i < txt.length; i++) {
+      var c = txt[i];
+      if (q) { if (c === '"' && txt[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === sep) { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return x.trim(); }); });
+  }
+  $('csv-file').onchange = function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var rd = new FileReader(); rd.onload = function () { $('csv-text').value = String(rd.result); }; rd.readAsText(f, 'utf-8');
+  };
+  $('imp-go').onclick = async function () {
+    var msg = $('imp-msg'); if (!S.db) return;
+    var linhas = parseCSV($('csv-text').value);
+    if (linhas.length < 2) { msg.textContent = 'Cole um CSV com cabeçalho e ao menos uma linha.'; return; }
+    var col = {}; linhas[0].forEach(function (h, i) { col[h.trim().toLowerCase()] = i; });
+    var btn = $('imp-go'); btn.disabled = true; var ok = 0, ign = 0;
+    for (var k = 1; k < linhas.length; k++) {
+      var r = linhas[k];
+      var g = function (n) { return (r[col[n]] == null ? '' : r[col[n]]).trim(); };
+      var gab = g('gabarito').toUpperCase(), alts = {};
+      ['A', 'B', 'C', 'D', 'E'].forEach(function (l) { if (g(l.toLowerCase())) alts[l] = g(l.toLowerCase()); });
+      if (!g('enunciado') || !g('materia') || !/^[A-E]$/.test(gab) || !alts[gab]) { ign++; continue; }
+      var id = slug([g('orgao'), g('cargo'), g('banca'), g('ano'), g('numero') || k].join('-')).slice(0, 150) || 'q' + k;
+      try {
+        await S.db.doc('questoes/' + id).set({
+          orgao: g('orgao'), cargo: g('cargo'), banca: g('banca'), ano: Number(g('ano')) || 0, prova: g('prova'),
+          materia: g('materia'), numero: Number(g('numero')) || null, texto: g('texto'), enunciado: g('enunciado'),
+          alternativas: alts, gabarito: gab, comentario: g('comentario'), exemplo: false
+        });
+        ok++;
+      } catch (err) { ign++; }
+      msg.textContent = 'Importando… ' + ok + ' ok';
+    }
+    btn.disabled = false;
+    msg.textContent = ok + ' questão(ões) importada(s)' + (ign ? ', ' + ign + ' linha(s) ignorada(s) (faltam campos ou o gabarito não está nas alternativas).' : '.');
+  };
+  $('imp-del-ex').onclick = async function () {
+    var ex = S.questoes.filter(function (q) { return q.exemplo; });
+    if (!ex.length) { $('imp-msg').textContent = 'Não há questões de exemplo.'; return; }
+    for (var i = 0; i < ex.length; i++) { try { await S.db.doc('questoes/' + ex[i].id).delete(); } catch (e) {} }
+    $('imp-msg').textContent = ex.length + ' questão(ões) de exemplo removida(s).';
+  };
+
+  /* ---------- dados ---------- */
+  function ordenar(a, b) { return (b.ano || 0) - (a.ano || 0) || (a.numero || 0) - (b.numero || 0); }
+  function digitando() { var a = document.activeElement; return a && a.tagName === 'TEXTAREA' && $('lista').contains(a); }
+
+  /* modo independente (fora do Claude, ex.: Netlify): dados salvos no navegador */
+  var LOCAL = (function () {
+    var pre = 'pmsp-db:', subs = [];
+    function rd(p) { try { var v = localStorage.getItem(pre + p); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+    function wr(p, d) { try { localStorage.setItem(pre + p, JSON.stringify(d)); } catch (e) {} }
+    function rm(p) { try { localStorage.removeItem(pre + p); } catch (e) {} }
+    function keys(c) { var out = [], b = pre + c + '/'; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf(b) === 0 && k.slice(b.length).indexOf('/') < 0) out.push(k.slice(b.length)); } } catch (e) {} return out; }
+    function notify() { subs.forEach(function (f) { f(); }); }
+    return { use: async function (n) {
+      if (n === 'user') return { id: async function () { return 'local'; }, canEdit: async function () { return false; }, isOwner: function () { return false; } };
+      if (n === 'db') return {
+        collection: function (c) { return { onSnapshot: function (cb) { var f = function () { cb({ docs: keys(c).map(function (id) { var d = rd(c + '/' + id); return { id: id, exists: true, data: function () { return d; } }; }) }); }; subs.push(f); setTimeout(f, 0); } }; },
+        doc: function (p) { return { get: async function () { var d = rd(p); return d ? { exists: true, data: function () { return d; } } : { exists: false }; }, set: async function (d) { wr(p, d); notify(); }, delete: async function () { rm(p); notify(); } }; }
+      };
+      return null;
+    } };
+  })();
+
+  async function iniciar() {
+    renderLista();
+    var cl = window.claude || LOCAL;
+    try { var rs = await fetch('questoes.json'); S.base = rs.ok ? await rs.json() : []; } catch (e) { S.base = []; }
+    var db = cl && cl.use ? await cl.use('db') : null;
+    var user = cl && cl.use ? await cl.use('user') : null;
+    if (!db || !user) {
+      S.carregou = true; $('lista').innerHTML = ''; $('count').innerHTML = '';
+      aviso('<b>Entre na sua conta do Claude para usar o site</b>As questões e o seu desempenho ficam salvos na sua conta.');
+      return;
+    }
+    S.db = db; S.uid = await user.id(); S.admin = !!(await user.canEdit()); carregarChave();
+    $('tab-i').hidden = !S.admin;
+    var timer = setTimeout(function () { if (!S.carregou) aviso('Ainda não foi possível alcançar os dados. Verifique a conexão.'); }, 10000);
+
+    db.collection('questoes').onSnapshot(function (snap) {
+      var extra = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }).filter(function (x) { return !x.exemplo; });
+      var ids = new Set(S.base.map(function (x) { return x.id; }));
+      S.questoes = S.base.concat(extra.filter(function (x) { return !ids.has(x.id); })).sort(ordenar);
+      S.carregou = true; clearTimeout(timer); aviso('');
+      renderFiltros(); if (!digitando()) renderLista(); if (S.aba === 'd') renderStats();
+    }, function () { S.carregou = true; aviso('Não foi possível carregar as questões.'); renderLista(); });
+
+    if (S.uid) {
+      db.collection('data/users/' + S.uid).onSnapshot(function (snap) {
+        var m = new Map(); snap.docs.forEach(function (d) { m.set(d.id, d.data()); });
+        S.resp = m; if (!digitando()) renderLista(); if (S.aba === 'd') renderStats();
+      }, function () {});
+    }
+  }
+  iniciar();
+})();
+</script>
