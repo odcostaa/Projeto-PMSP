@@ -511,24 +511,14 @@
     return h;
   }
   async function carregarChave() { return; }
-  async function escolherModelo() {
-    if (G.model) return G.model;
-    var pref = 'gemini-2.5-flash';
-    try {
-      var rs = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': G.key } });
-      if (rs.ok) {
-        var js = await rs.json(), melhor = null, nv = -1;
-        (js.models || []).forEach(function (m) {
-          var n = (m.name || '').replace('models/', ''), mm = n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/);
-          if (mm && (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && parseFloat(mm[1]) > nv) { nv = parseFloat(mm[1]); melhor = n; }
-        });
-        if (melhor) pref = melhor;
-      }
-    } catch (e) {}
-    G.model = pref; return pref;
+  async function escolherModelo() { return G.model || 'gemini-2.5-flash'; }
+  function comTimeout(url, opt, ms) {
+    var ac = new AbortController(), tm = setTimeout(function () { ac.abort(); }, ms);
+    opt.signal = ac.signal;
+    return fetch(url, opt).finally(function () { clearTimeout(tm); });
   }
   async function imgB64(url) {
-    var rs = await fetch(url); if (!rs.ok) throw new Error('img');
+    var rs = await comTimeout(url, {}, 15000); if (!rs.ok) throw new Error('img');
     var bl = await rs.blob();
     return await new Promise(function (ok, no) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = no; fr.readAsDataURL(bl); });
   }
@@ -561,25 +551,28 @@
   }
   var GL = 'https://generativelanguage.googleapis.com/v1beta/models/';
   async function chamarGemini(contents) {
-    var modelo = await escolherModelo(), body = JSON.stringify({ contents: contents, generationConfig: { temperature: 0.3, maxOutputTokens: 4096 } });
-    var rotas = [
-      { u: GL + modelo + ':generateContent', h: { 'Content-Type': 'application/json', 'x-goog-api-key': G.key } },
-      { u: GL + modelo + ':generateContent?key=' + encodeURIComponent(G.key), h: { 'Content-Type': 'text/plain' } },
-      { u: 'https://aiplatform.googleapis.com/v1/publishers/google/models/' + modelo + ':generateContent?key=' + encodeURIComponent(G.key), h: { 'Content-Type': 'application/json' } }
-    ], ultimo = null, rede = 0;
-    for (var i = 0; i < rotas.length; i++) {
+    var modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'], ultimo = null, rede = 0, tent = 0;
+    for (var i = 0; i < modelos.length; i++) {
+      var modelo = modelos[i], gc = { temperature: 0.3, maxOutputTokens: 4096 };
+      if (/2\.5/.test(modelo) && !/lite/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 };
+      var body = JSON.stringify({ contents: contents, generationConfig: gc });
+      tent++;
       try {
-        var rs = await fetch(rotas[i].u, { method: 'POST', headers: rotas[i].h, body: body }), js = null;
+        var rs = await comTimeout(GL + modelo + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': G.key }, body: body }, 40000), js = null;
         try { js = await rs.json(); } catch (e) {}
         if (rs.ok) {
           var t = ((((js && js.candidates || [])[0] || {}).content || {}).parts || []).map(function (p) { return p.text || ''; }).join('').trim();
-          if (!t) throw new Error('A IA não devolveu texto (' + ((((js && js.candidates) || [])[0] || {}).finishReason || 'sem resposta') + ').');
+          if (!t) { ultimo = new Error('A IA não devolveu texto (' + ((((js && js.candidates) || [])[0] || {}).finishReason || 'sem resposta') + ').'); continue; }
           return { t: t, modelo: modelo };
         }
         ultimo = new Error((js && js.error && js.error.message) || ('HTTP ' + rs.status));
-      } catch (e) { if (e instanceof TypeError) { rede++; ultimo = e; } else ultimo = e; }
+        if (rs.status === 401 || rs.status === 403 || rs.status === 400) break;
+      } catch (e) {
+        if (e && e.name === 'AbortError') ultimo = new Error('O Gemini demorou demais para responder (modelo ' + modelo + ').');
+        else if (e instanceof TypeError) { rede++; ultimo = e; } else ultimo = e;
+      }
     }
-    if (rede === rotas.length) { var e2 = new Error('Failed to fetch'); e2.rede = true; throw e2; }
+    if (rede === tent) { var e2 = new Error('Failed to fetch'); e2.rede = true; throw e2; }
     throw ultimo;
   }
   async function viaClaude(q, r, ch, pergunta) {
