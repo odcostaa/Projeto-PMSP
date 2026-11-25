@@ -511,6 +511,24 @@
     return h;
   }
   async function carregarChave() { return; }
+  async function listaModelos() {
+    if (G.lista) return G.lista;
+    var res = [];
+    try {
+      var rs = await comTimeout('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': G.key } }, 15000);
+      if (rs.ok) {
+        var js = await rs.json();
+        (js.models || []).forEach(function (m) {
+          var n = (m.name || '').replace('models/', ''), mm = n.match(/^gemini-(\d+(?:\.\d+)?)-flash(-lite)?$/);
+          if (mm && (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0) res.push({ n: n, v: parseFloat(mm[1]), lite: !!mm[2] });
+        });
+      }
+    } catch (e) {}
+    res.sort(function (a, b) { return (a.lite - b.lite) || (b.v - a.v); });
+    var nomes = res.map(function (x) { return x.n; });
+    ['gemini-3.5-flash', 'gemini-2.5-flash'].forEach(function (n) { if (nomes.indexOf(n) < 0) nomes.push(n); });
+    G.lista = nomes.slice(0, 5); return G.lista;
+  }
   async function escolherModelo() { return G.model || 'gemini-2.5-flash'; }
   function comTimeout(url, opt, ms) {
     var ac = new AbortController(), tm = setTimeout(function () { ac.abort(); }, ms);
@@ -551,10 +569,10 @@
   }
   var GL = 'https://generativelanguage.googleapis.com/v1beta/models/';
   async function chamarGemini(contents) {
-    var modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'], ultimo = null, rede = 0, tent = 0;
+    var modelos = G.model ? [G.model].concat((await listaModelos()).filter(function (x) { return x !== G.model; })) : await listaModelos(), ultimo = null, rede = 0, tent = 0;
     for (var i = 0; i < modelos.length; i++) {
       var modelo = modelos[i], gc = { temperature: 0.3, maxOutputTokens: 4096 };
-      if (/2\.5/.test(modelo) && !/lite/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 };
+      if (/^gemini-2\.5-flash$/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 };
       var body = JSON.stringify({ contents: contents, generationConfig: gc });
       tent++;
       try {
@@ -563,10 +581,11 @@
         if (rs.ok) {
           var t = ((((js && js.candidates || [])[0] || {}).content || {}).parts || []).map(function (p) { return p.text || ''; }).join('').trim();
           if (!t) { ultimo = new Error('A IA não devolveu texto (' + ((((js && js.candidates) || [])[0] || {}).finishReason || 'sem resposta') + ').'); continue; }
-          return { t: t, modelo: modelo };
+          G.model = modelo; return { t: t, modelo: modelo };
         }
         ultimo = new Error((js && js.error && js.error.message) || ('HTTP ' + rs.status));
-        if (rs.status === 401 || rs.status === 403 || rs.status === 400) break;
+        if (rs.status === 401 || rs.status === 403) break;
+        if (G.model === modelo) G.model = null;
       } catch (e) {
         if (e && e.name === 'AbortError') ultimo = new Error('O Gemini demorou demais para responder (modelo ' + modelo + ').');
         else if (e instanceof TypeError) { rede++; ultimo = e; } else ultimo = e;
