@@ -193,6 +193,7 @@
   <div class="brand">Questões <small>PMSP</small></div>
   <button class="lk" id="tab-q" aria-selected="true">Questões</button>
   <button class="lk" id="tab-d" aria-selected="false">Desempenho</button>
+  <button class="lk" id="tab-c" aria-selected="false">Configurações</button>
   <button class="lk" id="tab-i" aria-selected="false" hidden>Importar</button>
 </div></div>
 
@@ -250,6 +251,8 @@
 
   <section id="v-d" hidden><div id="stats"></div></section>
 
+  <section id="v-c" hidden><div class="box" id="cfg"></div></section>
+
   <section id="v-i" hidden>
     <div class="box">
       <b>Importar questões</b>
@@ -295,14 +298,16 @@
   /* ---------- abas ---------- */
   function aba(a) {
     S.aba = a;
-    ['q', 'd', 'i'].forEach(function (k) {
+    ['q', 'd', 'c', 'i'].forEach(function (k) {
       $('v-' + k).hidden = k !== a;
       $('tab-' + k).setAttribute('aria-selected', String(k === a));
     });
     if (a === 'd') renderStats();
+    if (a === 'c') renderCfg();
   }
   $('tab-q').onclick = function () { aba('q'); };
   $('tab-d').onclick = function () { aba('d'); };
+  $('tab-c').onclick = function () { aba('c'); };
   $('tab-i').onclick = function () { aba('i'); };
 
   /* ---------- filtros ---------- */
@@ -453,7 +458,7 @@
     }
     if (e.target.closest('[data-ia]')) return gerarIA(id, true);
     if (e.target.closest('[data-chat]')) return enviarChat(id);
-    if (e.target.closest('[data-setkey]')) { var nk = prompt('Cole sua chave do Gemini (AIza…). Fica salva só neste navegador:', G.key || ''); if (nk !== null) { G.key = nk.trim(); try { localStorage.setItem('pmsp-gemini-key', G.key); } catch (x) {} G.bloq = false; location.reload(); } return; }
+    if (e.target.closest('[data-savekey]')) { var nk = ($('cfg-key').value || '').trim(); G.key = nk; G.model = null; G.lista = null; G.bloq = false; try { localStorage.setItem('pmsp-gemini-key', nk); } catch (x) {} G.diag = nk ? 'Chave salva neste navegador.' : 'Chave removida.'; return renderCfg(); }
     if (e.target.closest('[data-diag]')) return diagnostico();
     if (e.target.closest('[data-resp]')) return responder(id);
     if (e.target.closest('[data-refazer]')) return refazer(id);
@@ -504,7 +509,7 @@
       else h += btn(G.bloq ? 'Explicar com o Claude (consome seu limite de uso)' : 'Explicar com IA (passo a passo)');
     }
     var ch = chatDe(q.id, r), pend = G.env.get(q.id);
-    h += '<p class="muted" style="margin:10px 0 0"><button class="btn sec" data-diag="1"' + (G.diagBusy ? ' disabled' : '') + '>Diagnosticar conexão com o Gemini</button> <button class="btn sec" data-setkey="1">' + (G.key ? 'Trocar' : 'Definir') + ' chave do Gemini</button></p>' + (G.diag ? '<pre class="rel">' + esc(G.diag) + '</pre>' : '') + '<div class="chat"><div class="chat-h">Converse com o Gemini sobre esta questão</div>' +
+    h += '<div class="chat"><div class="chat-h">Converse com o Gemini sobre esta questão</div>' +
       ch.map(function (m) { return '<div class="cm ' + (m.r === 'u' ? 'u' : 'm') + '">' + (m.r === 'u' ? esc(m.t) : mdHtml(m.t)) + '</div>'; }).join('') +
       (pend ? '<div class="cm m muted" role="status">Gemini está digitando…</div>' : '') +
       '<div class="chat-in"><textarea id="chat-' + esc(q.id) + '" rows="2" placeholder="Pergunte algo: não entendi o passo 2, explique de outro jeito, dê outro exemplo…"></textarea><button class="btn" data-chat="1"' + (pend ? ' disabled' : '') + '>Enviar</button></div></div>';
@@ -524,10 +529,10 @@
         });
       }
     } catch (e) {}
-    res.sort(function (a, b) { return (a.lite - b.lite) || (b.v - a.v); });
+    res.sort(function (a, b) { return (b.lite - a.lite) || (b.v - a.v); });
     var nomes = res.map(function (x) { return x.n; });
-    ['gemini-3.5-flash', 'gemini-2.5-flash'].forEach(function (n) { if (nomes.indexOf(n) < 0) nomes.push(n); });
-    G.lista = nomes.slice(0, 5); return G.lista;
+    ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash'].forEach(function (n) { if (nomes.indexOf(n) < 0) nomes.push(n); });
+    G.lista = nomes.slice(0, 4); return G.lista;
   }
   async function escolherModelo() { return G.model || 'gemini-2.5-flash'; }
   function comTimeout(url, opt, ms) {
@@ -549,13 +554,11 @@
       (q.texto ? 'TEXTO DE APOIO:\n' + q.texto + '\n' + (q.credito || '') + '\n\n' : '') +
       'ENUNCIADO:\n' + q.enunciado + '\n\nALTERNATIVAS:\n' + (alts || '(as alternativas são imagens anexas, na ordem A, B, C, D, E)') + '\n\n' +
       'Se houver imagens anexas (tabela, gráfico, tira, figura, alternativas em imagem), elas fazem parte da prova: use-as.\n\n' +
-      'Responda em Markdown com estas seções, nesta ordem:\n' +
-      '## Resposta correta\n(letra e a ideia central em 1 frase)\n' +
-      '## Por que esta é a resposta\n(explicação objetiva do raciocínio; cite trechos do texto ou a regra gramatical/legal/conceito aplicado)\n' +
-      '## Passo a passo da resolução\n(lista numerada; em Matemática, Informática ou Raciocínio, mostre cada cálculo/etapa até o resultado)\n' +
-      '## Por que as outras estão erradas\n(uma linha para cada alternativa incorreta, no formato "(X) motivo")\n' +
-      '## Dica para a prova\n(1 a 2 frases)\n' +
-      'Se o gabarito oficial parecer inconsistente com o enunciado, diga isso numa seção "## Observação", mas explique o gabarito oficial. Não invente informações. Depois da explicação o aluno poderá fazer perguntas de acompanhamento: responda sempre de forma didática e direta.';
+      'Seja DIRETO e curto (máx. ~180 palavras), sem introdução, sem enrolação, sem repetir o enunciado. Use Markdown neste formato:\n' +
+      '**Resposta: (letra)** — ideia central em 1 frase.\n' +
+      '**Por quê:** 2 a 4 linhas explicando o raciocínio que leva a esta alternativa (cite o trecho, a regra ou o conceito; em cálculo, mostre só as contas essenciais).\n' +
+      '**Descarte:** uma linha curta por alternativa errada: "(X) motivo".\n' +
+      'Se o gabarito parecer inconsistente, diga em 1 linha. Não invente. Em perguntas de acompanhamento, responda curto e didático.';
     var urls = [];
     (q.figuras || []).forEach(function (u) { urls.push(u); });
     (q.figuras_q || []).forEach(function (u) { if (urls.indexOf(u) < 0) urls.push(u); });
@@ -571,8 +574,8 @@
   async function chamarGemini(contents) {
     var modelos = G.model ? [G.model].concat((await listaModelos()).filter(function (x) { return x !== G.model; })) : await listaModelos(), ultimo = null, rede = 0, tent = 0;
     for (var i = 0; i < modelos.length; i++) {
-      var modelo = modelos[i], gc = { temperature: 0.3, maxOutputTokens: 4096 };
-      if (/^gemini-2\.5-flash$/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 };
+      var modelo = modelos[i], gc = { temperature: 0.3, maxOutputTokens: 900 };
+      if (/^gemini-2\.5-flash(-lite)?$/.test(modelo)) gc.thinkingConfig = { thinkingBudget: 0 }; else if (/^gemini-3/.test(modelo)) gc.thinkingConfig = { thinkingLevel: 'minimal' };
       var body = JSON.stringify({ contents: contents, generationConfig: gc });
       tent++;
       try {
@@ -612,7 +615,7 @@
   }
   function erroIA(err) {
     var m = String(err && err.message || err);
-    return (err && err.rede) || /Failed to fetch|NetworkError/i.test(m) ? 'O Gemini não pode ser acessado a partir desta página: o ambiente que hospeda o app bloqueia conexões com o Google (política CSP connect-src; não é erro da chave nem do código). Para ter a explicação agora, use o botão abaixo: ele usa o Claude e consome seu limite de uso do Claude.' : 'Erro do Gemini: ' + m;
+    return (err && err.rede) || /Failed to fetch|NetworkError/i.test(m) ? 'Não foi possível acessar o Gemini. Verifique a chave e teste a conexão em Configurações → API.' : 'Erro do Gemini: ' + m;
   }
   async function pedirIA(q, r, ch, pergunta, manual) {
     if (G.bloq) { if (manual) return await viaClaude(q, r, ch, pergunta); var eb = new Error('bloqueado'); eb.rede = true; throw eb; }
@@ -651,7 +654,7 @@
     }
   }
   async function diagnostico() {
-    if (G.diagBusy) return; G.diagBusy = true; G.diag = 'Executando testes…'; renderLista();
+    if (G.diagBusy) return; G.diagBusy = true; G.diag = 'Executando testes…'; renderCfg();
     var L = [], mk = function (s) { L.push(s); };
     mk('RELATÓRIO DE DIAGNÓSTICO — conexão com o Gemini');
     mk('Data: ' + new Date().toISOString());
@@ -680,7 +683,16 @@
     else if (exc === gk.length && G.csp.some(function (x) { return /connect-src/.test(x); })) mk('CONCLUSÃO: NÃO é erro do app nem da chave. A política de segurança (CSP connect-src) do ambiente onde a página roda bloqueia chamadas a domínios externos como o Google. Nenhuma alteração no código resolve; o app usa o Claude da página como alternativa automática.');
     else if (exc === gk.length) mk('CONCLUSÃO: as três rotas do Gemini falharam antes de qualquer resposta (erro de rede), enquanto o resultado dos testes de controle está acima. Se os controles externos também falharam, o ambiente bloqueia a saída; se só o Google falhou, é rede/extensão/firewall do navegador. Não é problema de lógica do app.');
     else mk('CONCLUSÃO: o Google respondeu, mas recusou a requisição (veja o HTTP acima): provavelmente a chave não é aceita nesse endpoint, está restrita ou sem cota. Gere uma chave nova em aistudio.google.com/apikey (formato AIza…).');
-    G.diag = L.join('\n'); G.diagBusy = false; renderLista();
+    G.diag = L.join('\n'); G.diagBusy = false; renderCfg();
+  }
+  function renderCfg() {
+    var c = $('cfg'); if (!c) return;
+    c.innerHTML = '<b>Configurações</b><h3 style="margin:14px 0 6px;font-size:15px">API — Gemini</h3>' +
+      '<p class="muted" style="margin:0 0 8px">A explicação passo a passo e o chat usam o Gemini. A chave fica salva só neste navegador (formato <code>AIza…</code>, gerada em aistudio.google.com/apikey).</p>' +
+      '<div class="acoes" style="margin:0"><input id="cfg-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole a chave do Gemini" value="' + esc(G.key || '') + '" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px">' +
+      '<button class="btn" data-savekey="1">Salvar</button><button class="btn sec" data-diag="1"' + (G.diagBusy ? ' disabled' : '') + '>Testar conexão</button></div>' +
+      '<p class="muted" style="margin:8px 0 0">Modelo em uso: ' + esc(G.model || 'será escolhido automaticamente') + '</p>' +
+      (G.diag ? '<pre class="rel">' + esc(G.diag) + '</pre>' : '');
   }
   function refDoc(qid) { return S.db.doc('data/users/' + S.uid + '/' + qid); }
   async function gravar(qid, campos) {
