@@ -139,6 +139,10 @@
   .fig.altimg { margin: 2px 0; max-width: min(100%, 620px); }
   :root[data-theme="dark"] .fig:not(.foto) { filter: invert(1) hue-rotate(180deg); }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fig:not(.foto) { filter: invert(1) hue-rotate(180deg); } }
+  .spin { display: inline-block; width: 16px; height: 16px; border: 2.5px solid var(--line); border-top-color: var(--brand, #4f7cff); border-radius: 50%; animation: gira .8s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  .pontos::after { content: ''; animation: pts 1.2s steps(4) infinite; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  @keyframes pts { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
   .rel { white-space: pre-wrap; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; background: var(--page); border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin: 8px 0; user-select: text; }
   .seg { position: relative; background-repeat: no-repeat; background-color: #fff; max-width: 100%; }
   .alt.cortada .seg::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #111; }
@@ -344,7 +348,7 @@
   $('tema').onclick = function () {
     var r = document.documentElement;
     var escuro = r.dataset.theme === 'dark' || (r.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-    r.dataset.theme = escuro ? 'light' : 'dark';
+    aplicaTema(escuro ? 'light' : 'dark'); if (S.aba === 'c') renderCfg();
   };
 
   function filtradas() {
@@ -458,8 +462,6 @@
     }
     if (e.target.closest('[data-ia]')) return gerarIA(id, true);
     if (e.target.closest('[data-chat]')) return enviarChat(id);
-    if (e.target.closest('[data-savekey]')) { var nk = ($('cfg-key').value || '').trim(); G.key = nk; G.model = null; G.lista = null; G.bloq = false; try { localStorage.setItem('pmsp-gemini-key', nk); } catch (x) {} G.diag = nk ? 'Chave salva neste navegador.' : 'Chave removida.'; return renderCfg(); }
-    if (e.target.closest('[data-diag]')) return diagnostico();
     if (e.target.closest('[data-resp]')) return responder(id);
     if (e.target.closest('[data-refazer]')) return refazer(id);
     if ((el = e.target.closest('[data-act]'))) {
@@ -502,7 +504,7 @@
     var st = G.estado.get(q.id);
     var btn = function (t) { return '<button class="btn sec" data-ia="1">' + t + '</button>'; };
     var h = '';
-    if (st === 'carregando') h += '<p class="muted" role="status">O Gemini está preparando a explicação…</p>';
+    if (st === 'carregando') h += '<p class="muted" role="status"><span class="spin" aria-hidden="true"></span>O Gemini está preparando a explicação<span class="pontos"></span></p>';
     else {
       if (st && st.erro) h += '<p style="color:var(--bad)">' + esc(st.erro) + '</p>';
       if (r.ia) h += '<div class="ia">' + mdHtml(r.ia) + '</div><p class="ia-tag">Explicação gerada por IA' + (r.iaModelo === 'claude' ? ' (Claude, porque o Gemini está bloqueado neste ambiente)' : ' (Gemini)') + '; confira sempre com o gabarito oficial.</p>' + btn('Gerar de novo');
@@ -511,7 +513,7 @@
     var ch = chatDe(q.id, r), pend = G.env.get(q.id);
     h += '<div class="chat"><div class="chat-h">Converse com o Gemini sobre esta questão</div>' +
       ch.map(function (m) { return '<div class="cm ' + (m.r === 'u' ? 'u' : 'm') + '">' + (m.r === 'u' ? esc(m.t) : mdHtml(m.t)) + '</div>'; }).join('') +
-      (pend ? '<div class="cm m muted" role="status">Gemini está digitando…</div>' : '') +
+      (pend ? '<div class="cm m muted" role="status"><span class="spin" aria-hidden="true"></span>Gemini está digitando<span class="pontos"></span></div>' : '') +
       '<div class="chat-in"><textarea id="chat-' + esc(q.id) + '" rows="2" placeholder="Pergunte algo: não entendi o passo 2, explique de outro jeito, dê outro exemplo…"></textarea><button class="btn" data-chat="1"' + (pend ? ' disabled' : '') + '>Enviar</button></div></div>';
     return h;
   }
@@ -685,14 +687,29 @@
     else mk('CONCLUSÃO: o Google respondeu, mas recusou a requisição (veja o HTTP acima): provavelmente a chave não é aceita nesse endpoint, está restrita ou sem cota. Gere uma chave nova em aistudio.google.com/apikey (formato AIza…).');
     G.diag = L.join('\n'); G.diagBusy = false; renderCfg();
   }
+  function aplicaTema(m) {
+    var r = document.documentElement; if (m === 'auto') delete r.dataset.theme; else r.dataset.theme = m;
+    try { localStorage.setItem('pmsp-tema', m); } catch (e) {}
+  }
+  (function () { var m = 'auto'; try { m = localStorage.getItem('pmsp-tema') || 'auto'; } catch (e) {} aplicaTema(m); })();
+  $('cfg').addEventListener('click', function (e) {
+    var el;
+    if (e.target.closest('[data-savekey]')) { var nk = ($('cfg-key').value || '').trim(); G.key = nk; G.model = null; G.lista = null; G.bloq = false; try { localStorage.setItem('pmsp-gemini-key', nk); } catch (x) {} G.diag = nk ? 'Chave salva neste navegador.' : 'Chave removida.'; return renderCfg(); }
+    if (e.target.closest('[data-diag]')) { var kv = ($('cfg-key').value || '').trim(); if (kv !== G.key) { G.key = kv; G.model = null; G.lista = null; try { localStorage.setItem('pmsp-gemini-key', kv); } catch (x) {} } return diagnostico(); }
+    if (e.target.closest('[data-eye]')) { var i = $('cfg-key'); i.type = i.type === 'password' ? 'text' : 'password'; e.target.closest('[data-eye]').setAttribute('aria-pressed', String(i.type === 'text')); return; }
+    if ((el = e.target.closest('[data-tema]'))) { aplicaTema(el.dataset.tema); return renderCfg(); }
+  });
+  function temaAtual() { try { return localStorage.getItem('pmsp-tema') || 'auto'; } catch (e) { return 'auto'; } }
   function renderCfg() {
     var c = $('cfg'); if (!c) return;
     c.innerHTML = '<b>Configurações</b><h3 style="margin:14px 0 6px;font-size:15px">API — Gemini</h3>' +
       '<p class="muted" style="margin:0 0 8px">A explicação passo a passo e o chat usam o Gemini. A chave fica salva só neste navegador (formato <code>AIza…</code>, gerada em aistudio.google.com/apikey).</p>' +
-      '<div class="acoes" style="margin:0"><input id="cfg-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole a chave do Gemini" value="' + esc(G.key || '') + '" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px">' +
+      '<div class="acoes" style="margin:0"><span style="flex:1;min-width:220px;display:flex;position:relative"><input id="cfg-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole a chave do Gemini" value="' + esc(G.key || '') + '" style="flex:1;padding:8px 40px 8px 8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px"><button type="button" data-eye="1" aria-label="Mostrar ou ocultar a chave" aria-pressed="false" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px;padding:4px;color:var(--ink)">&#128065;</button></span>' +
       '<button class="btn" data-savekey="1">Salvar</button><button class="btn sec" data-diag="1"' + (G.diagBusy ? ' disabled' : '') + '>Testar conexão</button></div>' +
       '<p class="muted" style="margin:8px 0 0">Modelo em uso: ' + esc(G.model || 'será escolhido automaticamente') + '</p>' +
-      (G.diag ? '<pre class="rel">' + esc(G.diag) + '</pre>' : '');
+      (G.diag ? '<pre class="rel">' + esc(G.diag) + '</pre>' : '') +
+      '<h3 style="margin:22px 0 6px;font-size:15px">Aparência</h3><div class="acoes" style="margin:0" role="radiogroup" aria-label="Tema">' +
+      [['light', 'Claro'], ['dark', 'Escuro'], ['auto', 'Automático (sistema)']].map(function (t) { return '<button class="btn ' + (temaAtual() === t[0] ? '' : 'sec') + '" role="radio" aria-checked="' + (temaAtual() === t[0]) + '" data-tema="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
   }
   function refDoc(qid) { return S.db.doc('data/users/' + S.uid + '/' + qid); }
   async function gravar(qid, campos) {
