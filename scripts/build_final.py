@@ -81,6 +81,12 @@ for d in out:
     for x in o['b']:
         if x[0] == 't': blocos.append({'t': x[1]})
         elif x[0] == 'f': blocos.append({'i': figs0[x[1]]}); crops.append(figs0[x[1]])
+        elif x[0] == 'p':
+            import pdfplumber
+            n += 1; nm = f"{d['id']}_b{n}.png"
+            pg = pdfplumber.open(f"provas_zip/{x[1]}.pdf").pages[x[2] - 1]
+            pg.crop((x[3], x[4], x[5], x[6])).to_image(resolution=230).save(os.path.join(out_dir, nm))
+            blocos.append({'i': 'img/' + nm}); crops.append('img/' + nm)
         else:
             n += 1; nm = f"{d['id']}_b{n}.png"; im = qimg.crop((x[3], x[1], min(x[4], qimg.width), min(x[2], qimg.height))); im.save(os.path.join(out_dir, nm)); used.add(nm) if isinstance(used, set) else None
             blocos.append({'i': 'img/' + nm}); crops.append('img/' + nm)
